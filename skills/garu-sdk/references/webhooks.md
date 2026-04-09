@@ -109,6 +109,7 @@ handleWebhook(@Body() body: WebhookPayload) {
 3. **IP allowlist** (optional, defense-in-depth):
    - Production: `54.232.59.251`, `54.232.204.133`
    - Sandbox: `54.207.173.93`
+   - **Note:** These IPs may change over time. Always check the [Garu documentation](https://docs.garu.com.br) for the latest list. Never rely on IP filtering as your sole authentication — `confirmHash` signature verification must remain the primary mechanism.
 
 **About `GARU_WEBHOOK_SECRET`:** This is the env var name for YOUR server (the webhook consumer). Set its value to the webhook hash from your Garu dashboard. The Garu backend internally stores this as `GALAXPAY_WEBHOOK_HASH` — you do not need that internal name unless you are working on the Garu backend itself.
 
