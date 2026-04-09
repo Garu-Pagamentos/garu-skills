@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "garu": {
+      "command": "npx",
+      "args": ["-y", "@garuhq/mcp"],
+      "env": { "GARU_API_KEY": "${GARU_API_KEY}" }
+    }
+  }
+}

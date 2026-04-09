@@ -1,0 +1,11 @@
+{
+  "name": "garu",
+  "displayName": "Garu",
+  "description": "Skills and MCP server for the Garu payment gateway — PIX, credit card, and boleto payments in Brazil.",
+  "version": "0.1.0",
+  "author": { "name": "Garu Pagamentos", "url": "https://garu.com.br" },
+  "homepage": "https://garu.com.br",
+  "repository": "https://github.com/Garu-Pagamentos/garu-skills",
+  "license": "MIT",
+  "keywords": ["payments", "pix", "boleto", "gateway", "brazil", "fintech"]
+}

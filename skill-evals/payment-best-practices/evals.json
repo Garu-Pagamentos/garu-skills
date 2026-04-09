@@ -1,0 +1,125 @@
+{
+  "skill_name": "payment-best-practices",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "How long can I legally store credit card data from my Brazilian customers?",
+      "expected_output": "Agent cites PCI-DSS: CVV can never be stored, PAN must be masked/tokenized. Cites LGPD data minimization. Recommends using charge IDs instead.",
+      "files": [],
+      "expectations": [
+        "States CVV cannot be stored after authorization (PCI-DSS)",
+        "States PAN must be masked or tokenized",
+        "Mentions LGPD data minimization principle",
+        "Recommends using Garu charge IDs as references"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I want to store CVV so I can process recurring payments without asking the customer again.",
+      "expected_output": "Agent refuses — CVV storage is absolutely prohibited by PCI-DSS. Recommends using Garu's subscription system.",
+      "files": [],
+      "expectations": [
+        "Explicitly states CVV storage is prohibited by PCI-DSS",
+        "Does NOT provide code to store CVV",
+        "Recommends Garu's subscription/recurring system as alternative",
+        "Mentions potential fines for PCI-DSS violations"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Which payment method has the lowest fees for my e-commerce in Brazil?",
+      "expected_output": "PIX has lowest fees (0-1.5%), followed by boleto (fixed R$1.50-5.00), then card (2-5% MDR). Fee varies by volume and contract.",
+      "files": [],
+      "expectations": [
+        "Ranks: PIX lowest, then boleto, then card",
+        "Provides approximate fee ranges for each method",
+        "Notes that card fees increase with installment count",
+        "Mentions that actual rates depend on contract/volume"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Can I accept a R$5000 PIX payment at 11pm?",
+      "expected_output": "Flags nocturnal PIX limit — default R$1,000 between 20:00-06:00. Customer would need to have increased their limit with their bank.",
+      "files": [],
+      "expectations": [
+        "Identifies the nocturnal PIX limit (R$1,000 default, 20:00-06:00)",
+        "Explains this is the CUSTOMER's bank limit, not Garu's",
+        "Notes the customer can request a limit increase (takes 24-48h)",
+        "Suggests daytime payment or alternative method as workaround"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "How do I verify that I received the correct amount after a card payment settles?",
+      "expected_output": "Explains settlement amount = charge amount minus fees (MDR). Recommends tracking expected vs actual via webhook fee data.",
+      "files": [],
+      "expectations": [
+        "Explains charge amount vs settlement amount (minus fees)",
+        "Mentions MDR (Merchant Discount Rate) for cards",
+        "Recommends comparing expected fees against actual webhook data",
+        "Suggests periodic reconciliation jobs"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Set the product price to 29.90 in my Garu integration.",
+      "expected_output": "Clarifies amount format — the API uses BRL decimal (29.90 means R$29.90). Warns about float arithmetic internally.",
+      "files": [],
+      "expectations": [
+        "Confirms 29.90 means R$29.90 in the Garu API (BRL decimal)",
+        "Warns about float arithmetic issues",
+        "Recommends using integer centavos (2990) internally",
+        "Mentions Math.round() when converting between formats"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "What do I need for BACEN compliance in my payment integration?",
+      "expected_output": "References BACEN constraints — PIX settlement via SPI, nocturnal limits, business day calendar, refund windows.",
+      "files": [],
+      "expectations": [
+        "Mentions PIX settlement via SPI (real-time, 24/7)",
+        "Mentions nocturnal PIX limits",
+        "Mentions business day calendar affecting card/boleto settlement",
+        "References chargeback window (180 days for cards)"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "A customer is requesting that I delete all their payment data under LGPD.",
+      "expected_output": "Explains LGPD right to deletion with exceptions — transaction records must be retained for 5 years (tax obligations). Delete personal data, anonymize transaction records.",
+      "files": [],
+      "expectations": [
+        "Acknowledges LGPD right to deletion",
+        "States exception: transaction records retained 5 years (fiscal/tax obligations)",
+        "Recommends deleting personal data but keeping anonymized transaction records",
+        "Mentions Código de Defesa do Consumidor or CTN Art. 174 as legal basis"
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "I'm using 0.1 + 0.2 to calculate a total in my checkout. Is that okay?",
+      "expected_output": "Warns that 0.1 + 0.2 !== 0.3 in JavaScript (IEEE 754). Recommends integer centavos for internal calculations.",
+      "files": [],
+      "expectations": [
+        "Identifies the floating-point precision issue",
+        "Shows that 0.1 + 0.2 = 0.30000000000000004",
+        "Recommends using integer centavos internally",
+        "Provides conversion functions or approach"
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "My payment error handler catches all exceptions and logs them silently. Is this okay for production?",
+      "expected_output": "Warns against silent error handling in payment flows. Must use Sentry.captureException with contextual tags, never log-only.",
+      "files": [],
+      "expectations": [
+        "Warns against silent error handling in critical payment paths",
+        "Recommends Sentry.captureException(err) with contextual tags",
+        "Mentions serializing error messages (err instanceof Error ? err.message : String(err))",
+        "References fire-and-forget .catch() blocks needing proper error reporting"
+      ]
+    }
+  ]
+}

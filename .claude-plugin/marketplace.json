@@ -1,0 +1,7 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "garu-skills",
+  "metadata": { "description": "Garu payment gateway skills for Claude Code" },
+  "owner": { "name": "Garu Pagamentos", "email": "suporte@garu.com.br" },
+  "plugins": [{ "name": "garu", "source": "./", "category": "developer-tools" }]
+}

@@ -1,0 +1,203 @@
+{
+  "skill_name": "garu-sdk",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create a PIX charge for R$50 using the Garu payment gateway.",
+      "expected_output": "Agent creates a PIX charge using @garuhq/node SDK with paymentMethod 'pix', includes customer with CPF document, and adds an idempotency key.",
+      "files": [],
+      "expectations": [
+        "Uses @garuhq/node SDK or cURL with correct endpoint",
+        "Sets paymentMethod/paymentMethodId to 'pix'",
+        "Includes customer object with document (CPF/CNPJ)",
+        "Includes idempotency key header or option",
+        "Does NOT pass amount directly — uses productId"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Charge a credit card R$300 in 3 installments with Garu.",
+      "expected_output": "Agent creates a card charge with paymentMethod 'creditcard', includes CardInfo with installments: 3, includes customer with document.",
+      "files": [],
+      "expectations": [
+        "Uses paymentMethod 'creditcard' (not 'credit_card')",
+        "Includes CardInfo with installments field set to 3",
+        "Includes expirationDate in YYYY-MM format",
+        "Includes holderName field",
+        "Includes idempotency key"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Generate a boleto for a customer in São Paulo.",
+      "expected_output": "Agent creates a boleto charge and includes full customer address (required for boleto). References boleto-charges.md.",
+      "files": [],
+      "expectations": [
+        "Uses paymentMethod 'boleto'",
+        "Includes customer address fields: zipCode, street, number, neighborhood, city, state",
+        "State uses 2-letter code ('SP')",
+        "Notes that address is required specifically for boleto"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Set up a webhook to track when Garu payments are completed.",
+      "expected_output": "Agent creates a webhook endpoint that verifies confirmHash, handles transaction.updateStatus event, and checks for paid statuses.",
+      "files": [],
+      "expectations": [
+        "Verifies confirmHash against GARU_WEBHOOK_SECRET before processing",
+        "Handles 'transaction.updateStatus' event",
+        "Checks for paid statuses: captured, payedPix, payedBoleto",
+        "Returns 200 OK promptly",
+        "Handles duplicate deliveries via webhookId"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "My queue system retries failed charge creation requests. How do I prevent duplicate charges with Garu?",
+      "expected_output": "Agent explains idempotency keys, uses semantic format (not UUID), and passes X-Idempotency-Key header.",
+      "files": [],
+      "expectations": [
+        "Explains X-Idempotency-Key header",
+        "Uses semantic key format like 'pix-charge/order-123' (not UUID)",
+        "Explains that same key returns original response without creating new charge",
+        "Notes 24-hour expiration",
+        "Warns that same key + different payload returns 409"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "I want to charge the customer 10.50 reais via PIX with Garu.",
+      "expected_output": "Agent uses the product system (productId) rather than passing amount directly. Notes that amounts come from product configuration.",
+      "files": [],
+      "expectations": [
+        "Uses productId to reference the product with the correct price",
+        "Does NOT pass a raw amount field in the charge creation request",
+        "If discussing amounts, uses BRL decimal format (not centavos) for the API"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "I need to store the customer's card number so I can charge them again later. How do I do this with Garu?",
+      "expected_output": "Agent refuses to store card numbers, cites PCI-DSS violation, recommends using Garu's subscription/recurring system or charge IDs.",
+      "files": [],
+      "expectations": [
+        "Warns against storing card numbers — PCI-DSS violation",
+        "Never provides code to store PAN or CVV",
+        "Recommends Garu's subscription system for recurring charges",
+        "Suggests using charge ID as reference instead of card data"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "Which payment method should I offer for a R$15 purchase in my Brazilian e-commerce?",
+      "expected_output": "Recommends PIX as primary (lowest fees, instant), with card and boleto as alternatives. Explains tradeoffs.",
+      "files": [],
+      "expectations": [
+        "Recommends PIX for low-value purchases (lowest fees)",
+        "Mentions card as alternative (for installments, though unnecessary for R$15)",
+        "Mentions boleto as option but notes it's slower",
+        "Does not recommend only one method — suggests offering multiple"
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "How do I install the Garu SDK in my Node.js project?",
+      "expected_output": "Provides npm install command, shows basic usage with API key from environment variable.",
+      "files": ["package.json"],
+      "expectations": [
+        "Provides: npm install @garuhq/node",
+        "Shows import and initialization with process.env.GARU_API_KEY",
+        "Does NOT hardcode an API key",
+        "Detects Node.js from package.json context"
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "Refund a Garu charge. The customer wants their money back for charge ID 456.",
+      "expected_output": "Uses the SDK refund method or POST /api/transactions/456/refund endpoint.",
+      "files": [],
+      "expectations": [
+        "Uses garu.charges.refund(456) or POST /api/transactions/456/refund",
+        "Mentions optional partial refund (amount parameter)",
+        "Mentions optional reason parameter",
+        "Includes authentication header"
+      ]
+    },
+    {
+      "id": 11,
+      "prompt": "I need to display a PIX QR code to the customer after creating a charge with Garu.",
+      "expected_output": "Uses the charge.code field from the response to generate a QR code. Never builds PIX code manually.",
+      "files": [],
+      "expectations": [
+        "Uses the 'code' field from the charge response",
+        "Suggests a QR code library (e.g., qrcode npm package) to render it",
+        "Never constructs PIX codes manually",
+        "Mentions the copy-paste (copia e cola) option as alternative"
+      ]
+    },
+    {
+      "id": 12,
+      "prompt": "Process incoming Garu webhooks in my Express.js app. Make sure they're secure.",
+      "expected_output": "Creates Express POST endpoint, verifies confirmHash BEFORE processing, handles duplicate webhookIds, returns 200 quickly.",
+      "files": [],
+      "expectations": [
+        "Verifies confirmHash as first step before any business logic",
+        "Uses process.env.GARU_WEBHOOK_SECRET",
+        "Checks webhookId for duplicate delivery prevention",
+        "Returns 200 OK immediately, processes async if needed",
+        "Handles multiple event types (transaction.updateStatus at minimum)"
+      ]
+    },
+    {
+      "id": 13,
+      "prompt": "Build a checkout page that lets users choose between PIX and credit card to pay with Garu.",
+      "expected_output": "Routes to both pix-charges and card-charges references. Creates charges with correct paymentMethod based on user selection.",
+      "files": [],
+      "expectations": [
+        "Handles both 'pix' and 'creditcard' payment methods",
+        "Card path includes CardInfo (cardNumber, cvv, expirationDate, holderName, installments)",
+        "PIX path does NOT include CardInfo",
+        "Both paths include customer with document",
+        "Both paths include idempotency keys"
+      ]
+    },
+    {
+      "id": 14,
+      "prompt": "A Garu charge creation returned a 500 error. What should I do?",
+      "expected_output": "Retry with exponential backoff, using the same idempotency key. For 400/422, fix the request instead of retrying.",
+      "files": [],
+      "expectations": [
+        "Recommends retry with exponential backoff for 500 errors",
+        "Emphasizes using the SAME idempotency key on retry",
+        "Distinguishes 500 (retry) from 400/422 (fix request)",
+        "Mentions checking the error response body for details"
+      ]
+    },
+    {
+      "id": 15,
+      "prompt": "Create a customer in Garu before creating a charge for them.",
+      "expected_output": "Uses customers.create() with name, email, document (CPF/CNPJ), phone, and personType.",
+      "files": [],
+      "expectations": [
+        "Uses garu.customers.create() or POST /api/customers",
+        "Includes document field (CPF 11 digits or CNPJ 14 digits)",
+        "Includes personType ('fisica' or 'juridica')",
+        "Includes required fields: name, email, phone",
+        "Does not hardcode any credentials"
+      ]
+    },
+    {
+      "id": 16,
+      "prompt": "I want to call the Garu API from my React frontend component to create a charge.",
+      "expected_output": "Agent warns against calling from the browser — CORS is not supported. Must call from server-side.",
+      "files": [],
+      "expectations": [
+        "Warns that the Garu API does not support CORS",
+        "Explains this is intentional to protect the API key",
+        "Recommends calling from server-side (API route, serverless function)",
+        "Never provides code that calls Garu from the browser directly"
+      ]
+    }
+  ]
+}
