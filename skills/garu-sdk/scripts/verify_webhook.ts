@@ -1,22 +1,24 @@
 /**
  * Garu Webhook Verification
  *
- * Standalone, copy-paste-ready function for verifying Garu webhook payloads.
- * Use this in your webhook endpoint to ensure events are authentic.
+ * Copy-paste-ready functions for verifying Garu webhook payloads.
  *
  * Usage:
- *   import { verifyGaruWebhook } from './verify_webhook';
+ *   import { verifyGaruWebhook, isPaid } from './verify_webhook';
  *
  *   app.post('/webhooks/garu', (req, res) => {
- *     if (!verifyGaruWebhook(req.body, process.env.GARU_WEBHOOK_SECRET)) {
- *       return res.status(401).json({ success: false });
+ *     const result = verifyGaruWebhook(req.body, process.env.GARU_WEBHOOK_SECRET);
+ *     if (!result.verified) {
+ *       return res.status(401).json({ success: false, reason: result.reason });
  *     }
  *     // Process the verified event...
  *     return res.json({ success: true });
  *   });
  */
 
-interface GaruWebhookPayload {
+import { timingSafeEqual, createHash } from "crypto";
+
+export interface GaruWebhookPayload {
   event: string;
   webhookId: number;
   confirmHash: string;
@@ -35,36 +37,63 @@ interface GaruWebhookPayload {
   };
 }
 
+type VerifyResult =
+  | { verified: true }
+  | { verified: false; reason: "missing_secret" | "missing_hash" | "invalid" };
+
 /**
- * Verify a Garu webhook payload.
+ * Verify a Garu webhook payload using constant-time comparison.
  *
  * @param payload - The parsed JSON body from the webhook request
- * @param secret  - Your GARU_WEBHOOK_SECRET (from the dashboard)
- * @returns true if the webhook is authentic, false otherwise
+ * @param secret  - Your GARU_WEBHOOK_SECRET (the webhook hash from the Garu dashboard)
+ * @returns A discriminated result: { verified: true } or { verified: false, reason }
  */
 export function verifyGaruWebhook(
   payload: GaruWebhookPayload,
   secret: string | undefined,
-): boolean {
+): VerifyResult {
   if (!secret) {
-    return false;
+    return { verified: false, reason: "missing_secret" };
   }
 
   if (!payload || !payload.confirmHash) {
-    return false;
+    return { verified: false, reason: "missing_hash" };
   }
 
-  return payload.confirmHash === secret;
+  const isValid = safeEqual(payload.confirmHash, secret);
+  return isValid ? { verified: true } : { verified: false, reason: "invalid" };
 }
 
 /**
- * Check if a webhook has already been processed (idempotency).
+ * Constant-time string comparison to prevent timing attacks.
+ * Hashes both inputs first to guarantee equal-length buffers.
+ */
+function safeEqual(a: string, b: string): boolean {
+  const aBuf = createHash("sha256").update(a).digest();
+  const bBuf = createHash("sha256").update(b).digest();
+  return timingSafeEqual(aBuf, bBuf);
+}
+
+/**
+ * Track whether a webhook has already been processed.
+ *
+ * WARNING: This in-memory implementation is a DEVELOPMENT STUB.
+ * In production, replace the Set with a durable store (Redis, database table)
+ * to survive restarts and work across multiple processes (e.g., PM2 cluster).
+ *
+ * The caller MUST mark the webhook as processed AFTER successful handling,
+ * not before — otherwise a failed handler will cause retries to be silently dropped.
+ *
+ * Recommended production pattern:
+ *   1. Check if webhookId exists in durable store → if yes, skip (duplicate)
+ *   2. Process the event
+ *   3. Insert webhookId into durable store (with TTL matching Garu's retry window)
  *
  * @param webhookId - The unique webhookId from the payload
  * @param store     - A Set (or any has/add interface) tracking processed IDs
  * @returns true if this is a duplicate delivery
  */
-export function isDuplicateWebhook(
+export function checkAndMarkProcessed(
   webhookId: number,
   store: { has(id: number): boolean; add(id: number): void },
 ): boolean {

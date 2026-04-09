@@ -42,24 +42,22 @@ Garu sends a `POST` request to your configured endpoint:
 
 ```typescript
 import express from "express";
-import crypto from "crypto";
+import { verifyGaruWebhook } from "./verify_webhook";
 
 const app = express();
 app.use(express.json());
 
 app.post("/api/webhooks/garu", (req, res) => {
-  // Step 1: Verify the webhook signature
-  const { confirmHash } = req.body;
-  const expectedHash = process.env.GARU_WEBHOOK_SECRET;
-
-  if (confirmHash !== expectedHash) {
-    console.error("Invalid webhook signature");
-    return res.status(401).json({ success: false });
+  // Step 1: Verify the webhook signature (constant-time comparison)
+  const result = verifyGaruWebhook(req.body, process.env.GARU_WEBHOOK_SECRET);
+  if (!result.verified) {
+    return res.status(401).json({ success: false, reason: result.reason });
   }
 
   // Step 2: Check for duplicate delivery (idempotency)
+  // Use a durable store (Redis, DB) — NOT an in-memory Set
   const { webhookId, event } = req.body;
-  // Store webhookId and skip if already processed
+  // if (await isDuplicate(webhookId)) return res.json({ success: true });
 
   // Step 3: Handle the event
   if (event === "transaction.updateStatus") {
@@ -80,6 +78,9 @@ app.post("/api/webhooks/garu", (req, res) => {
     }
   }
 
+  // Step 4: Mark as processed AFTER successful handling
+  // await markProcessed(webhookId);
+
   return res.json({ success: true });
 });
 ```
@@ -87,10 +88,13 @@ app.post("/api/webhooks/garu", (req, res) => {
 ### Node.js (NestJS)
 
 ```typescript
+import { verifyGaruWebhook } from './verify_webhook';
+
 @Post('webhooks/garu')
 handleWebhook(@Body() body: WebhookPayload) {
-  if (body.confirmHash !== process.env.GARU_WEBHOOK_SECRET) {
-    throw new UnauthorizedException('Invalid webhook signature');
+  const result = verifyGaruWebhook(body, process.env.GARU_WEBHOOK_SECRET);
+  if (!result.verified) {
+    throw new UnauthorizedException(`Webhook verification failed: ${result.reason}`);
   }
 
   // Process event...
@@ -100,11 +104,13 @@ handleWebhook(@Body() body: WebhookPayload) {
 
 ## Webhook Security
 
-1. **Verify `confirmHash`** — compare against your `GARU_WEBHOOK_SECRET` environment variable
-2. **Check `webhookId` for duplicates** — webhooks may be retried; use `webhookId` as an idempotency key
+1. **Verify `confirmHash`** — compare against your `GARU_WEBHOOK_SECRET` environment variable using constant-time comparison (`crypto.timingSafeEqual`). See `scripts/verify_webhook.ts` for a copy-paste-ready implementation.
+2. **Check `webhookId` for duplicates** — webhooks may be retried; store `webhookId` in a durable store (Redis, database) after successful processing. In-memory sets do not survive restarts or work across PM2 cluster processes.
 3. **IP allowlist** (optional, defense-in-depth):
    - Production: `54.232.59.251`, `54.232.204.133`
    - Sandbox: `54.207.173.93`
+
+**About `GARU_WEBHOOK_SECRET`:** This is the env var name for YOUR server (the webhook consumer). Set its value to the webhook hash from your Garu dashboard. The Garu backend internally stores this as `GALAXPAY_WEBHOOK_HASH` — you do not need that internal name unless you are working on the Garu backend itself.
 
 ## Webhook Retry Behavior
 

@@ -19,7 +19,7 @@ const charge = await garu.charges.create(
       document: "12345678900",
       phone: "11999998888",
     },
-    cardInfo: {
+    CardInfo: {
       cardNumber: "4111111111111111",
       cvv: "123",
       expirationDate: "2028-12", // YYYY-MM format
@@ -116,11 +116,12 @@ The maximum number of installments may vary by product configuration and seller 
 
 ## Common Mistakes
 
-| #   | Mistake                                 | Fix                                                                                   |
-| --- | --------------------------------------- | ------------------------------------------------------------------------------------- |
-| 1   | **Storing card data**                   | Never store PAN or CVV. Use charge IDs as references. PCI-DSS violation.              |
-| 2   | **Sending from browser**                | Card data must be sent from server-side only. The API blocks CORS.                    |
-| 3   | **Wrong expiration format**             | Use `YYYY-MM` (e.g., `2028-12`), not `MM/YY` or `12/28`.                              |
-| 4   | **Missing installments**                | `installments` is required for card charges. Use `1` for single payment (à vista).    |
-| 5   | **Not handling `denied`**               | Card declines are common. Always offer alternative payment methods (PIX, boleto).     |
-| 6   | **Logging card data in error handlers** | Error handlers often serialize the full request. Sanitize card fields before logging. |
+| #   | Mistake                                 | Fix                                                                                                                                                                                                                           |
+| --- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Storing card data**                   | Never store PAN or CVV. Use charge IDs as references. PCI-DSS violation.                                                                                                                                                      |
+| 2   | **Sending from browser**                | Card data must be sent from server-side only. The API blocks CORS.                                                                                                                                                            |
+| 3   | **Wrong expiration format**             | Use `YYYY-MM` (e.g., `2028-12`), not `MM/YY` or `12/28`.                                                                                                                                                                      |
+| 4   | **Missing installments**                | `installments` is required for card charges. Use `1` for single payment (à vista).                                                                                                                                            |
+| 5   | **Not handling `denied`**               | Card declines are common. Always offer alternative payment methods (PIX, boleto).                                                                                                                                             |
+| 6   | **Logging card data in error handlers** | Error handlers often serialize the full request. Sanitize card fields before logging.                                                                                                                                         |
+| 7   | **Wrong `CardInfo` casing**             | The REST API uses PascalCase `CardInfo`, not `cardInfo`. Frontend code may use camelCase `creditCard` for the payment method while the API field `paymentMethodId` expects lowercase `creditcard` — normalize before sending. |

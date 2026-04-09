@@ -69,13 +69,13 @@ Examples:
 
 ## Constraints
 
-| Property              | Value                                                       |
-| --------------------- | ----------------------------------------------------------- |
-| Header names accepted | `X-Idempotency-Key`, `x-idempotency-key`, `Idempotency-Key` |
-| Max length            | 255 characters                                              |
-| Expiration            | 24 hours                                                    |
-| Scope                 | Per seller (different sellers can use the same key)         |
-| Case-sensitive        | Yes                                                         |
+| Property              | Value                                                                                                        |
+| --------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Header names accepted | `X-Idempotency-Key`, `x-idempotency-key`, `Idempotency-Key`, `idempotency-key` (on `POST /api/transactions`) |
+| Max length            | 255 characters                                                                                               |
+| Expiration            | 24 hours                                                                                                     |
+| Scope                 | Per seller (different sellers can use the same key)                                                          |
+| Case-sensitive        | Yes                                                                                                          |
 
 ## Common Mistakes
 
